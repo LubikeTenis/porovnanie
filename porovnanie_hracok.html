@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porovnanie hráčok</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .input-section, .output-section {
+            margin-bottom: 30px;
+        }
+        .match-card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #fff;
+        }
+        .match-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .match-result span {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .winner {
+            color: green;
+        }
+        .loser {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Porovnanie hráčok</h1>
+    <div class="input-section">
+        <input type="file" id="fileInput" accept=".xlsx" />
+        <br><br>
+        <label for="player1">Hráčka 1:</label>
+        <input type="text" id="player1" list="players" />
+        <label for="player2">Hráčka 2:</label>
+        <input type="text" id="player2" list="players" />
+        <datalist id="players"></datalist>
+        <br><br>
+        <button onclick="comparePlayers()">Porovnať</button>
+    </div>
+
+    <div id="comparison" class="output-section"></div>
+    <div id="common-opponents" class="output-section"></div>
+    <div id="head-to-head" class="output-section"></div>
+    <div id="all-matches" class="output-section"></div>
+
+    <script>
+        let allMatches = [];
+        let selectedPlayer1 = null;
+        let selectedPlayer2 = null;
+
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+        function handleFile(e) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                allMatches = json;
+                populatePlayerList(json);
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        }
+
+        function populatePlayerList(data) {
+            const players = new Set();
+            data.forEach(row => {
+                if (row['Hráčka 1']) players.add(row['Hráčka 1']);
+                if (row['Hráčka 2']) players.add(row['Hráčka 2']);
+            });
+            const datalist = document.getElementById('players');
+            datalist.innerHTML = '';
+            players.forEach(player => {
+                const option = document.createElement('option');
+                option.value = player;
+                datalist.appendChild(option);
+            });
+        }
+
+        function comparePlayers() {
+            const p1 = document.getElementById('player1').value.trim();
+            const p2 = document.getElementById('player2').value.trim();
+            if (!p1 || !p2) return;
+            selectedPlayer1 = { 'meno a priezvisko': p1 };
+            selectedPlayer2 = { 'meno a priezvisko': p2 };
+
+            const p1Matches = allMatches.filter(m => m['Hráčka 1'] === p1 || m['Hráčka 2'] === p1);
+            const p2Matches = allMatches.filter(m => m['Hráčka 1'] === p2 || m['Hráčka 2'] === p2);
+
+            const commonOpponents = new Set();
+            const p1Opponents = new Set(p1Matches.map(m => m['Hráčka 1'] === p1 ? m['Hráčka 2'] : m['Hráčka 1']));
+            const p2Opponents = new Set(p2Matches.map(m => m['Hráčka 1'] === p2 ? m['Hráčka 2'] : m['Hráčka 1']));
+            p1Opponents.forEach(op => { if (p2Opponents.has(op)) commonOpponents.add(op); });
+
+            document.getElementById('comparison').innerHTML = `
+                <h2>Porovnanie hráčok</h2>
+                <p>${p1} odohrala ${p1Matches.length} zápasov</p>
+                <p>${p2} odohrala ${p2Matches.length} zápasov</p>
+            `;
+
+            let commonHTML = '<h2>Spoločné súperky</h2>';
+            if (commonOpponents.size === 0) {
+                commonHTML += '<p>Žiadne spoločné súperky</p>';
+            } else {
+                commonHTML += '<ul>';
+                commonOpponents.forEach(op => {
+                    commonHTML += `<li>${op}</li>`;
+                });
+                commonHTML += '</ul>';
+            }
+            document.getElementById('common-opponents').innerHTML = commonHTML;
+
+            const headToHead = allMatches.filter(m => {
+                return (m['Hráčka 1'] === p1 && m['Hráčka 2'] === p2) ||
+                       (m['Hráčka 1'] === p2 && m['Hráčka 2'] === p1);
+            });
+            let hthHTML = '<h2>Vzájomné zápasy</h2>';
+            if (headToHead.length === 0) {
+                hthHTML += '<p>Žiadne vzájomné zápasy</p>';
+            } else {
+                headToHead.forEach(match => {
+                    hthHTML += createMatchCard(match);
+                });
+            }
+            document.getElementById('head-to-head').innerHTML = hthHTML;
+
+            displayAllMatches();
+        }
+
+        function createMatchCard(match) {
+            const player1Surname = selectedPlayer1['meno a priezvisko'].split(' ')[0];
+            const player2Surname = selectedPlayer2['meno a priezvisko'].split(' ')[0];
+            const winner = match['Víťazka'] || '';
+            const h1 = match['Hráčka 1'] || '';
+            const h2 = match['Hráčka 2'] || '';
+            const score = match['Výsledok'] || '-';
+            const tournament = match.tournament || '';
+            const category = match.category || '';
+
+            let winnerLabel = '';
+            let loserLabel = '';
+
+            if (winner.includes(player1Surname)) {
+                winnerLabel = selectedPlayer1['meno a priezvisko'];
+                loserLabel = selectedPlayer2['meno a priezvisko'];
+            } else {
+                winnerLabel = selectedPlayer2['meno a priezvisko'];
+                loserLabel = selectedPlayer1['meno a priezvisko'];
+            }
+
+            return `
+                <div class="match-card">
+                    <div class="match-header">
+                        <div class="match-result">
+                            <span class="winner">${winnerLabel}</span>
+                            <span class="score">${score}</span>
+                            <span class="loser">${loserLabel}</span>
+                        </div>
+                        <div style="font-size: 14px; color: #888;">
+                            ${tournament} <span style="font-weight: normal;">|</span> ${category}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayAllMatches() {
+            const player1Matches = allMatches.filter(match =>
+                match['Hráčka 1'] === selectedPlayer1['meno a priezvisko'] ||
+                match['Hráčka 2'] === selectedPlayer1['meno a priezvisko']
+            );
+
+            const player2Matches = allMatches.filter(match =>
+                match['Hráčka 1'] === selectedPlayer2['meno a priezvisko'] ||
+                match['Hráčka 2'] === selectedPlayer2['meno a priezvisko']
+            );
+
+            let allMatchesHTML = `<h2>Zápasy hráčok v sezóne</h2>`;
+
+            allMatchesHTML += `<h3>${selectedPlayer1['meno a priezvisko']}</h3>`;
+            player1Matches.forEach(match => {
+                allMatchesHTML += createMatchCard(match);
+            });
+
+            allMatchesHTML += `<h3>${selectedPlayer2['meno a priezvisko']}</h3>`;
+            player2Matches.forEach(match => {
+                allMatchesHTML += createMatchCard(match);
+            });
+
+            document.getElementById('all-matches').innerHTML = allMatchesHTML;
+        }
+    </script>
+</body>
+</html>
