@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porovnávací nástroj tenisových hráčok</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #5a3e7f;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tennis-ball {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #ccff00;
+            border-radius: 50%;
+            margin: 0 10px;
+            position: relative;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .upload-section.has-data {
+            padding: 20px;
+            background: #e8f5e9;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #5a3e7f;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .file-status.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .selection-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .player-selectors {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 30px;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .player-selector {
+            position: relative;
+        }
+
+        .player-selector label {
+            display: block;
+            font-weight: 600;
+            color: #5a3e7f;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #5a3e7f;
+            box-shadow: 0 0 0 3px rgba(90, 62, 127, 0.1);
+        }
+
+        .vs-divider {
+            font-size: 24px;
+            font-weight: bold;
+            color: #5a3e7f;
+            text-align: center;
+            padding-top: 30px;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-top: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: #f5f5f5;
+        }
+
+        .suggestion-item strong {
+            color: #5a3e7f;
+        }
+
+        .compare-button {
+            display: block;
+            width: 300px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .compare-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .compare-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .player-cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .player-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .player-card.player1 {
+            border-top: 5px solid #667eea;
+        }
+
+        .player-card.player2 {
+            border-top: 5px solid #764ba2;
+        }
+
+        .player-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .player1 .player-name {
+            color: #667eea;
+        }
+
+        .player2 .player-name {
+            color: #764ba2;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-label {
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        .comparison-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 22px;
+            color: #5a3e7f;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .direct-matches {
+            display: grid;
+            gap: 15px;
+        }
+
+        .match-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #5a3e7f;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .match-result {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+
+        .winner {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .loser {
+            color: #dc3545;
+        }
+
+        .score {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+
+        .stats-comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 30px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .stat-column h3 {
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .stat-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .player1 .stat-value {
+            color: #667eea;
+        }
+
+        .player2 .stat-value {
+            color: #764ba2;
+        }
+
+        .vs-stat {
+            padding-top: 50px;
+            font-size: 20px;
+            color: #999;
+        }
+
+        .common-opponents {
+            margin-top: 20px;
+        }
+
+        .opponent-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto 1fr 2fr;
+            gap: 20px;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .opponent-name {
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .opponent-score {
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .win-loss {
+            color: #28a745;
+        }
+
+        .win-loss.loss {
+            color: #dc3545;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .age-context {
+            background: #e7f3ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #2196F3;
+        }
+
+        @media (max-width: 768px) {
+            .player-selectors {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .vs-divider {
+                padding: 10px 0;
+            }
+            
+            .player-cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-comparison {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .opponent-row {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="tennis-ball"></span>
+                Porovnávací nástroj tenisových hráčok
+                <span class="tennis-ball"></span>
+            </h1>
+            <p>Univerzálne porovnanie výkonnosti dorasteniek</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <h2>📁 Nahrajte Excel súbor s dátami</h2>
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+                <label for="fileInput" class="file-input-label">
+                    Vybrať Excel súbor
+                </label>
+            </div>
+            <div id="fileStatus"></div>
+            <p style="color: #666; font-size: 14px; margin-top: 15px;">
+                Súbor musí obsahovať: Sheet "Rebríček725", Sheet "Zoznam Turnajov" a turnajové sheety
+            </p>
+        </div>
+
+        <div class="selection-section" id="selectionSection">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #5a3e7f;">
+                Vyberte dve hráčky na porovnanie
+            </h2>
+            
+            <div class="player-selectors">
+                <div class="player-selector">
+                    <label for="player1Input">Hráčka 1</label>
+                    <input 
+                        type="text" 
+                        id="player1Input" 
+                        class="search-input" 
+                        placeholder="Začnite písať meno..."
+                        autocomplete="off"
+                    >
+                    <div id="suggestions1" class="suggestions"></div>
+                </div>
+                
+                <div class="vs-divider">VS</div>
+                
+                <div class="player-selector">
+                    <label for="player2Input">Hráčka 2</label>
+                    <input 
+                        type="text" 
+                        id="player2Input" 
+                        class="search-input" 
+                        placeholder="Začnite písať meno..."
+                        autocomplete="off"
+                    >
+                    <div id="suggestions2" class="suggestions"></div>
+                </div>
+            </div>
+            
+            <button id="compareButton" class="compare-button" disabled>
+                Porovnať hráčky
+            </button>
+        </div>
+
+        <div id="loadingMessage" class="loading" style="display: none;">
+            Analyzujem dáta...
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="player-cards-container" id="playerCards"></div>
+            <div id="comparisonResults"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // Globálne premenné
+        let allPlayers = [];
+        let allMatches = [];
+        let tournaments = [];
+        let selectedPlayer1 = null;
+        let selectedPlayer2 = null;
+        let dataLoaded = false;
+
+        // Event listeners
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('player1Input').addEventListener('input', (e) => handlePlayerSearch(e, 1));
+        document.getElementById('player2Input').addEventListener('input', (e) => handlePlayerSearch(e, 2));
+        document.getElementById('compareButton').addEventListener('click', compareSelectedPlayers);
+
+        // Skrytie návrhov pri kliknutí mimo
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('search-input')) {
+                document.getElementById('suggestions1').style.display = 'none';
+                document.getElementById('suggestions2').style.display = 'none';
+            }
+        });
+
+        // Načítanie súboru
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileStatus = document.getElementById('fileStatus');
+            fileStatus.innerHTML = '<div class="file-status">Načítavam súbor...</div>';
+
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Načítanie rebríčka
+                const rankingSheet = workbook.Sheets['Rebríček725'];
+                if (!rankingSheet) {
+                    throw new Error('Sheet "Rebríček725" nebol nájdený!');
+                }
+                
+                allPlayers = XLSX.utils.sheet_to_json(rankingSheet);
+                
+                // Normalizácia názvov hráčok
+                allPlayers.forEach(player => {
+                    player.normalizedName = normalizePlayerName(player['meno a priezvisko'] || '');
+                });
+                
+                // Načítanie turnajov
+                const tournamentsSheet = workbook.Sheets['Zoznam Turnajov'];
+                if (!tournamentsSheet) {
+                    throw new Error('Sheet "Zoznam Turnajov" nebol nájdený!');
+                }
+                
+                tournaments = XLSX.utils.sheet_to_json(tournamentsSheet);
+                
+                // Mapovanie kategórií
+                const categoryMap = {};
+                tournaments.forEach(t => {
+                    const keys = Object.keys(t);
+                    const nameKey = keys.find(k => k.toLowerCase().includes('turnaj')) || keys[0];
+                    const categoryKey = keys.find(k => k.toLowerCase().includes('kateg')) || keys[1];
+                    
+                    if (t[nameKey] && t[categoryKey]) {
+                        categoryMap[t[nameKey]] = t[categoryKey];
+                    }
+                });
+                
+                // Načítanie všetkých zápasov
+                allMatches = [];
+                workbook.SheetNames.forEach(sheetName => {
+                    if (sheetName !== 'Zoznam Turnajov' && sheetName !== 'Rebríček725') {
+                        const matches = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        
+                        const validMatches = matches.filter(match => {
+                            return match['Hráčka 1'] && 
+                                   match['Hráčka 2'] && 
+                                   match['Hráčka 1'] !== 'BYE' && 
+                                   match['Hráčka 2'] !== 'BYE' &&
+                                   match['Víťazka'];
+                        });
+                        
+                        validMatches.forEach(match => {
+                            match.tournament = sheetName;
+                            match.category = findCategory(sheetName, categoryMap);
+                        });
+                        
+                        allMatches = allMatches.concat(validMatches);
+                    }
+                });
+                
+                dataLoaded = true;
+                
+                // Update UI
+                fileStatus.innerHTML = `
+                    <div class="file-status success">
+                        ✓ Súbor úspešne načítaný<br>
+                        Hráčok: ${allPlayers.length} | Zápasov: ${allMatches.length}
+                    </div>
+                `;
+                
+                document.getElementById('uploadSection').classList.add('has-data');
+                document.getElementById('selectionSection').style.display = 'block';
+                
+                console.log(`Načítaných ${allPlayers.length} hráčok a ${allMatches.length} zápasov`);
+                
+            } catch (error) {
+                console.error('Chyba pri načítaní súboru:', error);
+                fileStatus.innerHTML = `
+                    <div class="file-status error" style="background: #ffcdd2; color: #c62828;">
+                        ✗ Chyba: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Normalizácia mena
+        function normalizePlayerName(name) {
+            if (!name) return '';
+            let normalized = name.replace(/\(\d+\)/g, '').replace(/🌟/g, '').trim();
+            normalized = normalized.replace(/^(Ing\.|Mgr\.|Bc\.|PhD\.|Dr\.|JUDr\.|MUDr\.)\s*/i, '');
+            return normalized.toLowerCase().trim();
+        }
+
+        // Vyhľadávanie hráčok
+        function handlePlayerSearch(event, playerNumber) {
+            const query = event.target.value.trim();
+            const suggestionsDiv = document.getElementById(`suggestions${playerNumber}`);
+            
+            if (query.length < 2) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            const suggestions = findPlayers(query);
+            displaySuggestions(suggestions, playerNumber);
+        }
+
+        // Nájdenie hráčok
+        function findPlayers(query) {
+            const normalizedQuery = query.toLowerCase();
+            
+            return allPlayers.filter(player => {
+                const name = player['meno a priezvisko'] || '';
+                return name.toLowerCase().includes(normalizedQuery);
+            }).slice(0, 10);
+        }
+
+        // Zobrazenie návrhov
+        function displaySuggestions(suggestions, playerNumber) {
+            const suggestionsDiv = document.getElementById(`suggestions${playerNumber}`);
+            
+            if (suggestions.length === 0) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            suggestionsDiv.innerHTML = suggestions.map(player => {
+                const name = player['meno a priezvisko'];
+                const ranking = player['Poradie v rebríčku'];
+                const year = player['Rok narodenia'];
+                const age = 2025 - year;
+                
+                return `
+                    <div class="suggestion-item" onclick="selectPlayer(${playerNumber}, '${name}')">
+                        <strong>${name}</strong> 
+                        (${ranking}. miesto, ${age} rokov)
+                    </div>
+                `;
+            }).join('');
+            
+            suggestionsDiv.style.display = 'block';
+        }
+
+        // Výber hráčky
+        function selectPlayer(playerNumber, playerName) {
+            const input = document.getElementById(`player${playerNumber}Input`);
+            const suggestionsDiv = document.getElementById(`suggestions${playerNumber}`);
+            
+            input.value = playerName;
+            suggestionsDiv.style.display = 'none';
+            
+            const player = allPlayers.find(p => p['meno a priezvisko'] === playerName);
+            
+            if (playerNumber === 1) {
+                selectedPlayer1 = player;
+            } else {
+                selectedPlayer2 = player;
+            }
+            
+            // Aktivovať tlačidlo ak sú vybrané obe hráčky
+            if (selectedPlayer1 && selectedPlayer2) {
+                document.getElementById('compareButton').disabled = false;
+            }
+        }
+
+        // Porovnanie hráčok
+        function compareSelectedPlayers() {
+            if (!selectedPlayer1 || !selectedPlayer2) return;
+            
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            setTimeout(() => {
+                performComparison();
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('resultsSection').style.display = 'block';
+            }, 500);
+        }
+
+        // Vykonanie porovnania
+        function performComparison() {
+            // Zobrazenie kariet hráčok
+            displayPlayerCards();
+            
+            // Analýza a porovnanie
+            const comparisonResults = analyzeComparison();
+            displayComparisonResults(comparisonResults);
+        }
+
+        // Zobrazenie kariet hráčok
+        function displayPlayerCards() {
+            const playerCardsDiv = document.getElementById('playerCards');
+            
+            const card1 = createPlayerCard(selectedPlayer1, 'player1');
+            const card2 = createPlayerCard(selectedPlayer2, 'player2');
+            
+            playerCardsDiv.innerHTML = card1 + card2;
+        }
+
+        // Vytvorenie karty hráčky
+        function createPlayerCard(player, className) {
+            const name = player['meno a priezvisko'];
+            const ranking = player['Poradie v rebríčku'];
+            const year = player['Rok narodenia'];
+            const age = 2025 - year;
+            const club = player['reg.'];
+            const region = player['__EMPTY'];
+            const totalPoints = player['Body Spolu'];
+            const singlesPoints = player['Body dvojhra'];
+            const singlesTournaments = player['Počet turnajov dvojhra'] || 0;
+            const doublesPoints = player['Body štvorhra'];
+            const doublesTournaments = player['Počet turnajov štvorhra'] || 0;
+            
+            const singlesEfficiency = singlesTournaments > 0 ? 
+                Math.round(singlesPoints / singlesTournaments) : 0;
+            
+            return `
+                <div class="player-card ${className}">
+                    <div class="player-name">${name}</div>
+                    <div class="player-info">
+                        <div class="info-row">
+                            <span class="info-label">Pozícia v rebríčku:</span>
+                            <span class="info-value">${ranking}. miesto</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Vek:</span>
+                            <span class="info-value">${age} rokov (${year})</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Klub:</span>
+                            <span class="info-value">${club}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Región:</span>
+                            <span class="info-value">${getRegionName(region)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Body spolu:</span>
+                            <span class="info-value">${formatPoints(totalPoints)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Body dvojhra:</span>
+                            <span class="info-value">${formatPoints(singlesPoints)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Počet turnajov:</span>
+                            <span class="info-value">${singlesTournaments}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Efektivita:</span>
+                            <span class="info-value">${singlesEfficiency} bodov/turnaj</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Analýza porovnania
+        function analyzeComparison() {
+            const player1Name = selectedPlayer1['meno a priezvisko'];
+            const player2Name = selectedPlayer2['meno a priezvisko'];
+            const player1Surname = player1Name.split(' ')[0];
+            const player2Surname = player2Name.split(' ')[0];
+            
+            // Zápasy hráčok
+            const player1Matches = findPlayerMatches(player1Name, player1Surname);
+            const player2Matches = findPlayerMatches(player2Name, player2Surname);
+            
+            // Priame zápasy
+            const directMatches = findDirectMatches(player1Matches, player2Matches, player1Surname, player2Surname);
+            
+            // Spoločné súperky
+            const commonOpponents = findCommonOpponents(player1Matches, player2Matches, player1Name, player2Name);
+            
+            // Štatistiky
+            const player1Stats = calculateStats(player1Matches, player1Surname);
+            const player2Stats = calculateStats(player2Matches, player2Surname);
+            
+            return {
+                directMatches,
+                commonOpponents,
+                player1Stats,
+                player2Stats
+            };
+        }
+
+        // Nájdenie zápasov hráčky
+        function findPlayerMatches(playerName, playerSurname) {
+            return allMatches.filter(match => {
+                const h1 = match['Hráčka 1'] || '';
+                const h2 = match['Hráčka 2'] || '';
+                
+                return h1.includes(playerSurname) || h2.includes(playerSurname) ||
+                       namesMatch(h1, playerName) || namesMatch(h2, playerName);
+            });
+        }
+
+        // Porovnanie mien
+        function namesMatch(name1, name2) {
+            if (!name1 || !name2) return false;
+            
+            const norm1 = normalizePlayerName(name1);
+            const norm2 = normalizePlayerName(name2);
+            
+            if (norm1 === norm2) return true;
+            
+            const parts1 = norm1.split(/\s+/);
+            const parts2 = norm2.split(/\s+/);
+            
+            if (parts1.length >= 2 && parts2.length >= 2) {
+                const surname1 = parts1[0];
+                const surname2 = parts2[0];
+                
+                if (surname1 === surname2) {
+                    const firstName1 = parts1[1];
+                    const firstName2 = parts2[1];
+                    
+                    if (firstName1[0] === firstName2[0]) return true;
+                }
+            }
+            
+            if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+            
+            return false;
+        }
+
+        // Nájdenie priamych zápasov
+        function findDirectMatches(player1Matches, player2Matches, player1Surname, player2Surname) {
+            return allMatches.filter(match => {
+                const h1 = match['Hráčka 1'] || '';
+                const h2 = match['Hráčka 2'] || '';
+                
+                return (h1.includes(player1Surname) && h2.includes(player2Surname)) ||
+                       (h2.includes(player1Surname) && h1.includes(player2Surname));
+            });
+        }
+
+        // Nájdenie spoločných súperiek
+        function findCommonOpponents(player1Matches, player2Matches, player1Name, player2Name) {
+            const player1Opponents = new Map();
+            const player2Opponents = new Map();
+            const player1Surname = player1Name.split(' ')[0];
+            const player2Surname = player2Name.split(' ')[0];
+            
+            // Zbieranie súperiek hráčky 1
+            player1Matches.forEach(match => {
+                const h1 = match['Hráčka 1'] || '';
+                const h2 = match['Hráčka 2'] || '';
+                let opponent = '';
+                
+                if (h1.includes(player1Surname) || namesMatch(h1, player1Name)) {
+                    opponent = h2;
+                } else if (h2.includes(player1Surname) || namesMatch(h2, player1Name)) {
+                    opponent = h1;
+                }
+                
+                if (opponent && !opponent.includes(player2Surname)) {
+                    const opponentSurname = opponent.split(' ')[0];
+                    if (!player1Opponents.has(opponentSurname)) {
+                        player1Opponents.set(opponentSurname, { name: opponent, matches: [] });
+                    }
+                    player1Opponents.get(opponentSurname).matches.push(match);
+                }
+            });
+            
+            // Zbieranie súperiek hráčky 2
+            player2Matches.forEach(match => {
+                const h1 = match['Hráčka 1'] || '';
+                const h2 = match['Hráčka 2'] || '';
+                let opponent = '';
+                
+                if (h1.includes(player2Surname) || namesMatch(h1, player2Name)) {
+                    opponent = h2;
+                } else if (h2.includes(player2Surname) || namesMatch(h2, player2Name)) {
+                    opponent = h1;
+                }
+                
+                if (opponent && !opponent.includes(player1Surname)) {
+                    const opponentSurname = opponent.split(' ')[0];
+                    if (!player2Opponents.has(opponentSurname)) {
+                        player2Opponents.set(opponentSurname, { name: opponent, matches: [] });
+                    }
+                    player2Opponents.get(opponentSurname).matches.push(match);
+                }
+            });
+            
+            // Nájdenie spoločných
+            const common = [];
+            player1Opponents.forEach((data, opponentSurname) => {
+                if (player2Opponents.has(opponentSurname)) {
+                    common.push({
+                        opponent: data.name,
+                        player1Matches: data.matches,
+                        player2Matches: player2Opponents.get(opponentSurname).matches
+                    });
+                }
+            });
+            
+            return common;
+        }
+
+        // Výpočet štatistík
+        function calculateStats(matches, playerSurname) {
+            const stats = {
+                totalMatches: matches.length,
+                wins: 0,
+                losses: 0,
+                winRate: 0,
+                byCategory: {}
+            };
+            
+            matches.forEach(match => {
+                const winner = match['Víťazka'] || '';
+                const h1 = match['Hráčka 1'] || '';
+                const h2 = match['Hráčka 2'] || '';
+                
+                let isWinner = false;
+                
+                if (winner.includes(playerSurname)) {
+                    isWinner = true;
+                } else if (h1.includes(playerSurname) && winner.includes(h1.split(' ')[0])) {
+                    isWinner = true;
+                } else if (h2.includes(playerSurname) && winner.includes(h2.split(' ')[0])) {
+                    isWinner = true;
+                }
+                
+                if (isWinner) {
+                    stats.wins++;
+                } else {
+                    stats.losses++;
+                }
+                
+                // Štatistiky podľa kategórií
+                const category = match.category || 'Neznáma';
+                if (!stats.byCategory[category]) {
+                    stats.byCategory[category] = { wins: 0, losses: 0, total: 0 };
+                }
+                
+                stats.byCategory[category].total++;
+                if (isWinner) {
+                    stats.byCategory[category].wins++;
+                } else {
+                    stats.byCategory[category].losses++;
+                }
+            });
+            
+            stats.winRate = stats.totalMatches > 0 ? 
+                Math.round((stats.wins / stats.totalMatches) * 100) : 0;
+            
+            return stats;
+        }
+
+        // Zobrazenie výsledkov porovnania
+        function displayComparisonResults(results) {
+            const comparisonDiv = document.getElementById('comparisonResults');
+            let html = '';
+            
+            // Priame zápasy
+            if (results.directMatches.length > 0) {
+                html += `
+                    <div class="comparison-section">
+                        <h2 class="section-title">🎾 Priame zápasy</h2>
+                        <div class="direct-matches">
+                            ${results.directMatches.map(match => createMatchCard(match)).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="comparison-section">
+                        <h2 class="section-title">🎾 Priame zápasy</h2>
+                        <p style="text-align: center; color: #666; padding: 20px;">
+                            Tieto hráčky sa zatiaľ nestretli v priamom súboji.
+                        </p>
+                    </div>
+                `;
+            }
+            
+            // Štatistiky
+            html += `
+                <div class="comparison-section">
+                    <h2 class="section-title">📊 Porovnanie štatistík</h2>
+                    <div class="stats-comparison">
+                        <div class="stat-column player1">
+                            <h3>${selectedPlayer1['meno a priezvisko']}</h3>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player1Stats.totalMatches}</div>
+                                <div class="stat-label">Počet zápasov</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player1Stats.wins}-${results.player1Stats.losses}</div>
+                                <div class="stat-label">Výhry - Prehry</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player1Stats.winRate}%</div>
+                                <div class="stat-label">Úspešnosť</div>
+                            </div>
+                        </div>
+                        
+                        <div class="vs-stat">VS</div>
+                        
+                        <div class="stat-column player2">
+                            <h3>${selectedPlayer2['meno a priezvisko']}</h3>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player2Stats.totalMatches}</div>
+                                <div class="stat-label">Počet zápasov</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player2Stats.wins}-${results.player2Stats.losses}</div>
+                                <div class="stat-label">Výhry - Prehry</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${results.player2Stats.winRate}%</div>
+                                <div class="stat-label">Úspešnosť</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Spoločné súperky
+            if (results.commonOpponents.length > 0) {
+                html += `
+                    <div class="comparison-section">
+                        <h2 class="section-title">🤝 Spoločné súperky (${results.commonOpponents.length})</h2>
+                        <div class="common-opponents">
+                            ${results.commonOpponents.slice(0, 10).map(opp => createCommonOpponentRow(opp)).join('')}
+                        </div>
+                        ${results.commonOpponents.length > 10 ? 
+                            `<p style="text-align: center; color: #666; margin-top: 10px;">
+                                ... a ďalších ${results.commonOpponents.length - 10} spoločných súperiek
+                            </p>` : ''
+                        }
+                    </div>
+                `;
+            }
+            
+            // Vekový kontext
+            const ageDiff = (2025 - selectedPlayer1['Rok narodenia']) - (2025 - selectedPlayer2['Rok narodenia']);
+            if (ageDiff !== 0) {
+                html += `
+                    <div class="comparison-section">
+                        <h2 class="section-title">👶 Vekový kontext</h2>
+                        <div class="age-context">
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                ${selectedPlayer1['meno a priezvisko']} je o <strong>${Math.abs(ageDiff)} 
+                                ${Math.abs(ageDiff) === 1 ? 'rok' : 'roky'}</strong> 
+                                ${ageDiff > 0 ? 'starší' : 'mladší'} ako ${selectedPlayer2['meno a priezvisko']}.
+                                ${ageDiff > 0 ? 
+                                    'To znamená viac skúseností a fyzickú výhodu, čo je v dorasteneckom tenise významný faktor.' :
+                                    'V tomto veku je to významná nevýhoda, ale zároveň ukazuje väčší potenciál do budúcnosti.'
+                                }
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            comparisonDiv.innerHTML = html;
+        }
+
+        // Vytvorenie karty zápasu
+        function createMatchCard(match) {
+            const player1Surname = selectedPlayer1['meno a priezvisko'].split(' ')[0];
+            const player2Surname = selectedPlayer2['meno a priezvisko'].split(' ')[0];
+            const winner = match['Víťazka'] || '';
+            
+            let winner1 = false;
+            let winner2 = false;
+            
+            if (winner.includes(player1Surname)) {
+                winner1 = true;
+            } else if (winner.includes(player2Surname)) {
+                winner2 = true;
+            }
+            
+            return `
+                <div class="match-card">
+                    <div class="match-header">
+                        <span class="tournament-name">${match.tournament} (${match.category})</span>
+                        <span class="score">${match['Výsledok']}</span>
+                    </div>
+                    <div class="match-result">
+                        <span class="${winner1 ? 'winner' : 'loser'}">${match['Hráčka 1']}</span>
+                        <span style="margin: 0 10px;">vs</span>
+                        <span class="${winner2 ? 'winner' : 'loser'}">${match['Hráčka 2']}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Vytvorenie riadku spoločnej súperky
+        function createCommonOpponentRow(data) {
+            const player1Name = selectedPlayer1['meno a priezvisko'];
+            const player2Name = selectedPlayer2['meno a priezvisko'];
+            const player1Surname = player1Name.split(' ')[0];
+            const player2Surname = player2Name.split(' ')[0];
+            
+            // Výsledky hráčky 1
+            let player1Wins = 0, player1Losses = 0;
+            data.player1Matches.forEach(match => {
+                const winner = match['Víťazka'] || '';
+                if (winner.includes(player1Surname)) {
+                    player1Wins++;
+                } else {
+                    player1Losses++;
+                }
+            });
+            
+            // Výsledky hráčky 2
+            let player2Wins = 0, player2Losses = 0;
+            data.player2Matches.forEach(match => {
+                const winner = match['Víťazka'] || '';
+                if (winner.includes(player2Surname)) {
+                    player2Wins++;
+                } else {
+                    player2Losses++;
+                }
+            });
+            
+            return `
+                <div class="opponent-row">
+                    <div class="opponent-score">
+                        <span class="${player1Wins > player1Losses ? 'win-loss' : 'win-loss loss'}">
+                            ${player1Wins}-${player1Losses}
+                        </span>
+                    </div>
+                    <div style="text-align: right; color: #667eea; font-weight: 600;">
+                        ${player1Name.split(' ')[1]}
+                    </div>
+                    <div class="opponent-name">
+                        vs ${data.opponent}
+                    </div>
+                    <div style="text-align: left; color: #764ba2; font-weight: 600;">
+                        ${player2Name.split(' ')[1]}
+                    </div>
+                    <div class="opponent-score">
+                        <span class="${player2Wins > player2Losses ? 'win-loss' : 'win-loss loss'}">
+                            ${player2Wins}-${player2Losses}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper funkcie
+        function getRegionName(code) {
+            const regions = {
+                'B': 'Bratislava',
+                'Z': 'Západ',
+                'S': 'Stred',
+                'V': 'Východ'
+            };
+            return regions[code] || code;
+        }
+
+        function formatPoints(points) {
+            if (typeof points === 'string' && points.includes('ITF')) {
+                return points;
+            }
+            return points || 0;
+        }
+
+        function findCategory(sheetName, categoryMap) {
+            if (categoryMap[sheetName]) return categoryMap[sheetName];
+            
+            const normalizedSheet = sheetName.toLowerCase().replace(/\s+/g, '');
+            
+            for (const [tournamentName, category] of Object.entries(categoryMap)) {
+                const normalizedTournament = tournamentName.toLowerCase().replace(/\s+/g, '');
+                if (normalizedSheet.includes(normalizedTournament) || 
+                    normalizedTournament.includes(normalizedSheet)) {
+                    return category;
+                }
+            }
+            
+            if (sheetName.toLowerCase().includes('msr')) return 'MSR';
+            if (sheetName.toLowerCase().includes('mr')) return 'MR';
+            
+            return 'Neznáma';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
